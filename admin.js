@@ -12,135 +12,6 @@ class AdminManager {
         this.bindEvents();
         this.checkAdminSession();
         this.loadNotificationSound();
-        this.injectNotificationStyles();
-    }
-
-    injectNotificationStyles() {
-        // Vérifier si les styles sont déjà injectés
-        if (document.getElementById('notification-styles')) return;
-        
-        const style = document.createElement('style');
-        style.id = 'notification-styles';
-        style.textContent = `
-            /* Styles spécifiques pour le panneau de notifications - IMPORTANT !important */
-            .notification-panel .notification-section-title {
-                padding: 8px 15px;
-                background: #f8f9fa;
-                font-size: 0.85rem;
-                font-weight: 600;
-                color: #666;
-                border-bottom: 1px solid #eee;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            .notification-panel .notification-section-title.unread-section {
-                background: #fff3cd !important;
-                color: #856404 !important;
-                border-bottom: 1px solid #ffeaa7 !important;
-                font-weight: 700;
-            }
-            
-            .notification-panel .notification-count-badge {
-                background: #e74c3c;
-                color: white;
-                font-size: 0.75rem;
-                padding: 2px 8px;
-                border-radius: 10px;
-            }
-            
-            /* Fond jaune pour notifications non lues dans le panneau */
-            .notification-panel .notification-item.unread-notification {
-                background-color: #fff3cd !important;
-                border-left: 3px solid #ffc107 !important;
-                position: relative;
-            }
-            
-            .notification-panel .notification-item.unread-notification:hover {
-                background-color: #ffeaa7 !important;
-            }
-            
-            .notification-panel .notification-item.unread-notification .notification-item-title {
-                color: #856404 !important;
-                font-weight: 700;
-            }
-            
-            .notification-panel .notification-item.unread-notification .notification-item-title span:first-child {
-                color: #856404 !important;
-            }
-            
-            .notification-panel .notification-item.unread-notification .notification-item-message {
-                color: #856404 !important;
-            }
-            
-            .notification-panel .notification-bell-icon {
-                color: #ffc107;
-                margin-right: 5px;
-                animation: bellSwing 1s ease-in-out infinite;
-            }
-            
-            @keyframes bellSwing {
-                0%, 100% { transform: rotate(0deg); }
-                25% { transform: rotate(-10deg); }
-                75% { transform: rotate(10deg); }
-            }
-            
-            /* Styles de base pour les éléments de notification */
-            .notification-panel .notification-item {
-                padding: 12px 15px;
-                border-bottom: 1px solid #eee;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                background-color: white;
-            }
-            
-            .notification-panel .notification-item:hover {
-                background-color: #f8f9fa;
-            }
-            
-            .notification-panel .notification-item-title {
-                font-weight: 600;
-                margin-bottom: 5px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            .notification-panel .notification-item-time {
-                font-size: 0.7rem;
-                color: #999;
-                white-space: nowrap;
-            }
-            
-            .notification-panel .notification-item-message {
-                font-size: 0.85rem;
-                color: #666;
-                margin-bottom: 5px;
-                line-height: 1.4;
-            }
-            
-            .notification-panel .notification-item-order {
-                font-size: 0.8rem;
-                color: #3498db;
-                cursor: pointer;
-                text-decoration: underline;
-                display: inline-block;
-            }
-            
-            /* Animation pour notifications non lues */
-            @keyframes highlightPulse {
-                0% { background-color: #fff3cd; }
-                50% { background-color: #fff8e1; }
-                100% { background-color: #fff3cd; }
-            }
-            
-            .notification-panel .notification-item.unread-notification {
-                animation: highlightPulse 2s ease-in-out infinite;
-            }
-        `;
-        document.head.appendChild(style);
     }
 
     bindEvents() {
@@ -717,10 +588,13 @@ class AdminManager {
         
         window.shop.orders.forEach(order => {
             const paymentMethod = order.paymentMethod === 'card' ? 'Carte' : 'Mobile';
+            const isUnread = !order.adminRead;
+            const rowClass = isUnread ? 'unread-order' : '';
+            const orderIcon = isUnread ? '🔔 ' : '';
             
             html += `
-                <tr data-order-id="${order.id}">
-                    <td class="font-mono text-sm">${order.id}</td>
+                <tr data-order-id="${order.id}" class="${rowClass}">
+                    <td class="font-mono text-sm">${orderIcon}${order.id}</td>
                     <td>
                         <div class="font-semibold" style="font-size: 0.9rem;">${order.customer.firstName} ${order.customer.lastName}</div>
                         <div class="text-sm text-gray-600">${order.customer.email}</div>
@@ -758,12 +632,15 @@ class AdminManager {
         
         window.shop.orders.forEach(order => {
             const paymentMethod = order.paymentMethod === 'card' ? 'Carte' : 'Mobile';
+            const isUnread = !order.adminRead;
+            const cardClass = isUnread ? 'unread-order-mobile' : '';
+            const orderIcon = isUnread ? '🔔 ' : '';
             
             html += `
-                <div class="mobile-table-card" data-order-id="${order.id}">
+                <div class="mobile-table-card ${cardClass}" data-order-id="${order.id}">
                     <div class="mobile-table-row">
                         <div class="mobile-table-label">ID Commande</div>
-                        <div class="mobile-table-value font-mono text-sm">${order.id}</div>
+                        <div class="mobile-table-value font-mono text-sm">${orderIcon}${order.id}</div>
                     </div>
                     <div class="mobile-table-row">
                         <div class="mobile-table-label">Client</div>
@@ -960,7 +837,7 @@ class AdminManager {
         // Update notification bell
         this.updateNotificationBell();
         
-        // Add to notification panel with yellow background
+        // Add to notification panel
         this.addNotificationToPanel(order);
         
         // Show desktop notification if supported
@@ -971,7 +848,7 @@ class AdminManager {
             });
         }
         
-        // Reload orders (without yellow highlighting in table)
+        // Reload orders to show unread status
         this.loadAdminOrders();
         this.loadMobileOrders();
         
@@ -983,7 +860,7 @@ class AdminManager {
         // Get current notifications
         let notifications = JSON.parse(localStorage.getItem('lamiti-notifications') || '[]');
         
-        // Add new notification with unread status
+        // Add new notification
         const notification = {
             id: 'notif-' + Date.now(),
             type: 'new_order',
@@ -1110,7 +987,10 @@ class AdminManager {
         // Check if sound should stop
         this.checkAndStopNotificationSound();
         
-        // Mark notification as read in panel (remove yellow background)
+        // Update order display
+        this.highlightOrderAsRead(orderId);
+        
+        // Mark notification as read in panel
         this.markNotificationAsReadInPanel(orderId);
     }
 
@@ -1130,6 +1010,30 @@ class AdminManager {
         
         // Update notification panel
         this.updateNotificationPanel();
+    }
+
+    highlightOrderAsRead(orderId) {
+        // Remove unread class from order row
+        const orderRow = document.querySelector(`[data-order-id="${orderId}"]`);
+        if (orderRow) {
+            orderRow.classList.remove('unread-order');
+            // Remove bell icon from order ID
+            const orderIdCell = orderRow.querySelector('td:first-child');
+            if (orderIdCell) {
+                orderIdCell.textContent = orderIdCell.textContent.replace('🔔 ', '');
+            }
+        }
+        
+        // Remove unread class from mobile card
+        const mobileCard = document.querySelector(`.mobile-table-card[data-order-id="${orderId}"]`);
+        if (mobileCard) {
+            mobileCard.classList.remove('unread-order-mobile');
+            // Remove bell icon from order ID
+            const orderIdValue = mobileCard.querySelector('.mobile-table-value');
+            if (orderIdValue) {
+                orderIdValue.textContent = orderIdValue.textContent.replace('🔔 ', '');
+            }
+        }
     }
 
     updateNotificationBell() {
@@ -1314,17 +1218,16 @@ class AdminManager {
         
         let html = '';
         
-        // Add title for new notifications with yellow background
+        // Add title for new notifications
         if (unreadNotifications.length > 0) {
             html += `
-                <div class="notification-section-title unread-section">
-                    <span style="font-weight: 700; color: #856404;">${unreadNotifications.length} nouvelle(s) notification(s)</span>
-                    <span class="notification-count-badge">${unreadNotifications.length}</span>
+                <div class="notification-section-title">
+                    <span class="notification-count-badge">${unreadNotifications.length} nouvelle(s)</span>
                 </div>
             `;
         }
         
-        // Unread notifications with yellow background
+        // Unread notifications with visual highlighting
         unreadNotifications.forEach((notification, index) => {
             html += this.createNotificationHTML(notification, index, true);
         });
@@ -1332,20 +1235,20 @@ class AdminManager {
         // Add separator if there are both unread and read notifications
         if (unreadNotifications.length > 0 && readNotifications.length > 0) {
             html += `
-                <div class="notification-section-title">
+                <div class="notification-section-title" style="margin-top: 10px;">
                     <span>Anciennes notifications</span>
                 </div>
             `;
         }
         
-        // Read notifications (no yellow background)
+        // Read notifications
         readNotifications.forEach((notification, index) => {
             html += this.createNotificationHTML(notification, index + unreadNotifications.length, false);
         });
         
         if (notifications.length === 0) {
             html = `
-                <div class="notification-item" style="text-align: center; color: #666; padding: 20px;">
+                <div class="notification-item" style="text-align: center; color: #666;">
                     Aucune notification
                 </div>
             `;
@@ -1357,20 +1260,20 @@ class AdminManager {
     createNotificationHTML(notification, index, isUnread) {
         const timeAgo = this.getTimeAgo(notification.timestamp);
         const orderLink = notification.orderId ? 
-            `<span class="notification-item-order" onclick="viewOrderFromNotification('${notification.orderId}')" style="color: #3498db; text-decoration: underline; cursor: pointer;">
+            `<span class="notification-item-order" onclick="viewOrderFromNotification('${notification.orderId}')">
                 Voir la commande
             </span>` : '';
         
-        // Yellow background for unread notifications
         const unreadClass = isUnread ? 'unread-notification' : '';
+        const bellIcon = isUnread ? '<span class="notification-bell-icon">🔔</span>' : '';
         
         return `
-            <div class="notification-item ${unreadClass}" data-index="${index}" onclick="markNotificationAsReadInPanel(${index})" style="cursor: pointer;">
+            <div class="notification-item ${unreadClass}" onclick="markNotificationAsReadInPanel(${index})">
                 <div class="notification-item-title">
-                    <span style="font-weight: 600;">${isUnread ? '🔔 ' : ''}${notification.title}</span>
+                    <span>${bellIcon} ${notification.title}</span>
                     <span class="notification-item-time">${timeAgo}</span>
                 </div>
-                <div class="notification-item-message" style="margin: 5px 0;">${notification.message}</div>
+                <div class="notification-item-message">${notification.message}</div>
                 ${orderLink}
             </div>
         `;
@@ -1849,6 +1752,196 @@ function getStatusLabel(status) {
     return labels[status] || status;
 }
 
+// Add shake animation CSS
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
+    .category-image {
+        position: relative;
+    }
+    
+    .category-image-actions {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .category-card:hover .category-image-actions {
+        opacity: 1;
+    }
+    
+    .stock-input {
+        width: 50px;
+        padding: 0.3rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+        .stock-input {
+            width: 40px;
+        }
+    }
+    
+    .update-stock-btn {
+        background: #27ae60;
+        color: white;
+        border: none;
+        padding: 0.3rem 0.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 0.3rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    
+    .update-stock-btn:hover {
+        background: #219a52;
+    }
+    
+    /* Styles for unread orders */
+    .unread-order {
+        background-color: rgba(255, 243, 205, 0.5) !important;
+        border-left: 4px solid #ffc107 !important;
+        animation: pulseUnread 2s infinite;
+    }
+    
+    .unread-order:hover {
+        background-color: rgba(255, 243, 205, 0.7) !important;
+    }
+    
+    .unread-order-mobile {
+        border-left: 4px solid #ffc107 !important;
+        background-color: rgba(255, 243, 205, 0.3) !important;
+        animation: pulseUnread 2s infinite;
+        box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+    }
+    
+    @keyframes pulseUnread {
+        0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    }
+    
+    /* Notification sound indicator */
+    .sound-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background-color: #e74c3c;
+        border-radius: 50%;
+        margin-left: 5px;
+        animation: blink 1s infinite;
+    }
+    
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+    
+    /* Notification panel styles */
+    .notification-section-title {
+        padding: 8px 15px;
+        background: #f8f9fa;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #666;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .notification-count-badge {
+        background: #e74c3c;
+        color: white;
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+    
+    /* Unread notification styles in panel */
+    .unread-notification {
+        background-color: rgba(255, 243, 205, 0.4) !important;
+        border-left: 3px solid #ffc107 !important;
+        animation: pulseNotification 2s infinite;
+    }
+    
+    .unread-notification:hover {
+        background-color: rgba(255, 243, 205, 0.6) !important;
+    }
+    
+    @keyframes pulseNotification {
+        0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.2); }
+        70% { box-shadow: 0 0 0 4px rgba(255, 193, 7, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    }
+    
+    .notification-bell-icon {
+        color: #ffc107;
+        margin-right: 5px;
+        animation: bellSwing 1s ease-in-out infinite;
+    }
+    
+    @keyframes bellSwing {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-10deg); }
+        75% { transform: rotate(10deg); }
+    }
+    
+    /* Updated notification styles for panel */
+    .notification-item {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .notification-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .notification-item-title {
+        font-weight: 600;
+        margin-bottom: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .notification-item-time {
+        font-size: 0.7rem;
+        color: #999;
+        white-space: nowrap;
+    }
+    
+    .notification-item-message {
+        font-size: 0.85rem;
+        color: #666;
+        margin-bottom: 5px;
+        line-height: 1.4;
+    }
+    
+    .notification-item-order {
+        font-size: 0.8rem;
+        color: #3498db;
+        cursor: pointer;
+        text-decoration: underline;
+        display: inline-block;
+    }
+`;
+document.head.appendChild(style);
+
 // Global variables
 let uploadedImages = [];
 let currentEditingProduct = null;
@@ -2315,6 +2408,7 @@ function markAllNotificationsAsRead() {
         if (window.shop) {
             window.shop.orders.forEach(order => {
                 window.adminManager.updateOrderReadStatus(order.id, true);
+                window.adminManager.highlightOrderAsRead(order.id);
             });
         }
         
@@ -2386,6 +2480,12 @@ function viewOrderFromNotification(orderId) {
         if (orderRow) {
             // Scroll to the order
             orderRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Highlight the order
+            orderRow.style.backgroundColor = '#fff3cd';
+            setTimeout(() => {
+                orderRow.style.backgroundColor = '';
+            }, 3000);
             
             // Mark order as read
             if (window.adminManager) {
